@@ -10,8 +10,7 @@ intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 bot = commands.Bot(command_prefix=".", intents=intents)
-command_channel_ids = 1241131391501074615
-command_channel_id = bot.get_channel(command_channel_ids)
+bot.bot_log_channel = None
 class Menu(discord.ui.View):
     def __init__(self):
         super().__init__()
@@ -21,8 +20,9 @@ class Menu(discord.ui.View):
     async def ticket(self, interaction:discord.Interaction, button:discord.ui.Button):
         user = interaction.user
         channel = await user.guild.create_text_channel(f"ticket for {user.name}")
+        admin = discord.utils.get(user.guild.roles, name="admin")
         await channel.set_permissions(user, read_messages=True, send_messages=True)
-        await channel.send(f"{user.mention} welcome to the shop an @admin well join you soon")
+        await channel.send(f"{user.mention} welcome to the shop an {admin.mention} well join you soon")
         everyone = discord.utils.get(user.guild.roles, name="member")
         await channel.set_permissions(everyone,read_messages=False,send_messages=False)
         self.channel_id = channel.id
@@ -31,6 +31,17 @@ async def on_ready():
     print("login succful")
     guild = bot.get_guild(803369227167072327)
     channel_com_name = "bot-log"
+    for channel in guild.channels:
+        if channel.name == channel_com_name:
+            bot.bot_log_channel = channel
+            break
+    else:
+        overwrites ={
+                guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                guild.me: discord.PermissionOverwrite(read_messages=True)
+            }
+        bot.bot_log_channel = await guild.create_text_channel(channel_com_name, overwrites=overwrites)
+    print(f"Bot log channel ID: {bot.bot_log_channel.id}")
     channelID = bot.get_channel(1241309467396542468)
     await channelID.send("test")
     view = Menu()
@@ -44,7 +55,8 @@ async def on_ready():
     channel_command = await guild.create_text_channel(channel_com_name)
     await channel_command.set_permissions(role,read_messages=True,send_messages=False)
     await channel_command.set_permissions(everyone,read_messages=False,send_messages=False)
-    command_channel_ids = channel_command.id
+    channel_ID = channel_command.id
+    bot.bot_log_channel = bot.get_channel(channel_ID)
 @bot.event
 async def on_member_join(member):#done
     guild = member.guild
@@ -63,20 +75,18 @@ async def on_message(message):#semi-done
         if word in message.content:
             await user.add_roles(role,reason="saying bad word")
             await message.delete()
-            channel = bot.get_channel(command_channel_id)
+            channel = bot.bot_log_channel
             await channel.send(f"{user.mention} has been muted for saying {word}")
             return
-print(command_channel_id)
 @bot.command(name="cltk")
 async def cltk(ctx):
-    channel = Menu().channel_id
-    is_channel = bot.get_channel(channel)
-    if is_channel:
-        await is_channel.delete()
+    channel = ctx.channel
+    if channel:
+        await channel.delete()
     else:
         await ctx.send(f"{channel} does not existe")
 @bot.command(name="mute")
-@commands.has_permissions(mute_members=True)
+@commands.has_permissions(moderate_members=True)
 async def mute(ctx, member:discord.Member,duration:int,*,reason:None):#done
     duration_sec = conver_duration(duration)
     is_admin = discord.utils.get(ctx.guild.roles, name="admin")
@@ -91,11 +101,11 @@ async def mute(ctx, member:discord.Member,duration:int,*,reason:None):#done
         await ctx.send(f"{ctx.author.mention} {member.mention} is already muted")
         return
     await member.add_roles(is_muted)
-    await command_channel_id.send(f"{member.mention} has been muted for {duration}.")
+    await bot.bot_log_channel.send(f"{member.mention} has been muted for {duration}.")
     await ctx.send(f"{member.mention} has been muted for {duration}.")
     await asyncio.sleep(duration_sec)
     await member.remove_roles(is_muted)
-    await command_channel_id.send(f"{member.mention} has been unmuted.")
+    await bot.bot_log_channel.send(f"{member.mention} has been unmuted.")
 @bot.command(name="kick")
 @commands.has_permissions(kick_members=True)
 async def kick(ctx, mem:discord.Member,*, reason=None):#done
@@ -107,7 +117,7 @@ async def kick(ctx, mem:discord.Member,*, reason=None):#done
         if reason == None:
             reason = "No reason provided"
         message = f"You have been kicked from {ctx.guild.name} for {reason}"
-        channel = bot.get_channel(command_channel_id)
+        channel = bot.bot_log_channel
         await channel.send(f"{mem.mention} has been kicked for {reason}")
         await mem.send(message)
         await ctx.guild.kick(mem, reason=reason)
@@ -145,7 +155,7 @@ async def ban(ctx, mem:discord.Member,*, reason=None):#done
         if reason == None:
             reason = "No reason provided"
         message = f"You have been banned from {ctx.guild.name} for {reason}"
-        channel = bot.get_channel(command_channel_id)
+        channel = bot.bot_log_channel
         await ctx.send(f"{mem.mention} has been banned for {reason}")
         await mem.send(message)
         await ctx.guild.ban(mem, reason=reason)
@@ -161,7 +171,7 @@ async def unban(ctx, id: int):#done
     if role is not None and role.name == "admin":
         if user == ctx.message.author:
             await ctx.send(f"{ctx.author.mention} you are not banned")
-        channel = bot.get_channel(command_channel_id)
+        channel = bot.bot_log_channel
         await ctx.guild.unban(user)
         await channel.send(f"{user} has been unbanned")
     else:
