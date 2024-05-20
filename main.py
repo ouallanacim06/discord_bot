@@ -202,16 +202,19 @@ async def ban(ctx, mem:discord.Member,*, reason=None):#done
 @commands.has_permissions(ban_members=True)
 async def unban(ctx, id: int):#done
     user = await bot.fetch_user(id)
-    role = discord.utils.get(ctx.author.roles, name="admin")
-    if role is not None and role.name == "admin":
-        if user == ctx.message.author:
-            await ctx.send(f"{ctx.author.mention} you are not banned")
-        channel = bot.bot_log_channel
-        await ctx.guild.unban(user)
-        await channel.send(f"{user} has been unbanned")
-    else:
-        await ctx.send(f"{ctx.author.mention} you dont have admin")
+    author = ctx.author
+    role = discord.utils.get(ctx.guild.roles, name="admin")
+    if role not in author.roles:
+        await ctx.send(f"{author.mention} you dont have admin")
         return
+    if user == author:
+        await ctx.send("You can't unban yourself!")
+        return
+    message = discord.Embed(title="unban",description=f"{author.mention} has unban {user.mention}")
+    await ctx.guild.unban(user)
+    await bot.bot_log_channel.send(embed=message)
+    user_mes = discord.Embed(title="unban", description=f"{author.mention} has unban you")
+    await user.send(embed=user_mes)
 user_list = {}
 @bot.command(name="warn")
 @commands.has_permissions(kick_members=True)
