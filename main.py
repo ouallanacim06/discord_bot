@@ -233,7 +233,7 @@ async def rmwarn(ctx, member: discord.Member, amount: int):
       remove_warn(ctx, member, amount)
       mess = discord.Embed(title="remove warn",description=f"{ctx.author.mention}\nhas removed {amount} of warns for {member.name}")
       await bot.bot_log_channel.send(embed=mess)
-@bot.command(name="slow_mode")
+@bot.command(name="swmode")
 async def swmode(ctx, duration: int):
     role = discord.utils.get(ctx.guild.roles, name="admin")
     if role not in ctx.author.roles:
