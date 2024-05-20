@@ -1,10 +1,45 @@
-import discord, os, asyncio
+import discord, os, asyncio, json
 from discord.ext import commands
 from dotenv import load_dotenv
 load_dotenv()
 def conver_duration(duration: str):
     multiplier = 60 if duration.endswith("m") else 3600
     return int(duration[:-1]) * multiplier
+def save_warn(ctx, member: discord.Member,reason: str):
+    if not os.path.exists('warns.json'):
+        with open('warns.json', 'w') as f:
+            json.dump({}, f)
+
+    with open('warns.json', 'r') as f:
+        try:
+            warns = json.load(f)
+        except json.JSONDecodeError:
+            warns = {}
+
+    if str(member.id) not in warns:
+        warns[str(member.id)] = []
+
+    warns[str(member.id)].append(reason)
+    with open('warns.json', 'w') as f:
+        json.dump(warns, f)
+
+def remove_warn(ctx, member: discord.Member, amount: int):
+    with open('warns.json', 'r') as f:
+        warns = json.load(f)
+
+    if str(member.id) in warns:
+        warns[str(member.id)] = warns[str(member.id)][amount:]
+
+    with open('warns.json', 'w') as f:
+        json.dump(warns, f)
+def warns_check(member: discord.Member):
+    with open('warns.json', 'r') as f:
+        try:
+            warns = json.load(f)
+        except json.JSONDecodeError:
+            warns = {}
+
+    return len(warns.get(str(member.id), []))
 token = os.getenv("tok_name")
 intents = discord.Intents.default()
 intents.members = True
@@ -177,4 +212,25 @@ async def unban(ctx, id: int):#done
     else:
         await ctx.send(f"{ctx.author.mention} you dont have admin")
         return
+user_list = {}
+@bot.command(name="warn")
+@commands.has_permissions(kick_members=True)
+async def warn(ctx,member:discord.Member,*,reason):
+    save_warn(ctx,member=member,reason=reason)
+    dm = await bot.fetch_user(member.id)
+    em=discord.Embed(title="Warning", description=f"Server: {ctx.guild.name}\nReason: {reason}")
+    await dm.send(embed=em)
+    warns = warns_check(member)
+    if warns >= 4:
+        reason=f"having more thatn 3 warning"
+        mes = discord.Embed(title="kick", description=f"Server: {ctx.guild.name}\nReason: {reason}")
+        mess = discord.Embed(title="kick",description=f"member: {member.mention}\nReason: {reason}")
+        await bot.bot_log_channel.send(embed=mess)
+        await dm.send(embed=mes)
+        await ctx.guild.kick(member)
+@bot.command()
+async def rmwarn(ctx, member: discord.Member, amount: int):
+      remove_warn(ctx, member, amount)
+      mess = discord.Embed(title="remove warn",description=f"{ctx.author.mention}\nhas removed {amount} of warns for {member.name}")
+      await bot.bot_log_channel.send(embed=mess)
 bot.run(token)
