@@ -219,6 +219,11 @@ async def unban(ctx, id: int):#done
 @commands.has_permissions(kick_members=True)
 async def warn(ctx,member:discord.Member,*,reason):
     save_warn(ctx,member=member,reason=reason)
+    role = discord.utils.get(ctx.author.roles, name="admin")
+    user = ctx.author
+    if user.roles is not role:
+        await ctx.send(f"{user.mention} you dont have admin")
+        return
     dm = await bot.fetch_user(member.id)
     em=discord.Embed(title="Warning", description=f"Server: {ctx.guild.name}\nReason: {reason}")
     await dm.send(embed=em)
@@ -233,6 +238,11 @@ async def warn(ctx,member:discord.Member,*,reason):
 @bot.command()
 async def rmwarn(ctx, member: discord.Member, amount: int):
       remove_warn(ctx, member, amount)
+      role = discord.utils.get(ctx.author.roles, name="admin")
+      user = ctx.author
+      if user.roles is not role:
+          await ctx.send(f"{user.mention} you dont have admin")
+          return
       mess = discord.Embed(title="remove warn",description=f"{ctx.author.mention}\nhas removed {amount} of warns for {member.name}")
       await bot.bot_log_channel.send(embed=mess)
 bot.run(token)
