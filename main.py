@@ -215,7 +215,6 @@ async def unban(ctx, id: int):#done
     await bot.bot_log_channel.send(embed=message)
     user_mes = discord.Embed(title="unban", description=f"{author.mention} has unban you")
     await user.send(embed=user_mes)
-user_list = {}
 @bot.command(name="warn")
 @commands.has_permissions(kick_members=True)
 async def warn(ctx,member:discord.Member,*,reason):
