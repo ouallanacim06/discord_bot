@@ -233,4 +233,13 @@ async def rmwarn(ctx, member: discord.Member, amount: int):
       remove_warn(ctx, member, amount)
       mess = discord.Embed(title="remove warn",description=f"{ctx.author.mention}\nhas removed {amount} of warns for {member.name}")
       await bot.bot_log_channel.send(embed=mess)
+@bot.command(name="slow_mode")
+async def swmode(ctx, duration: int):
+    role = discord.utils.get(ctx.guild.roles, name="admin")
+    if role not in ctx.author.roles:
+        await ctx.send(f"{ctx.author.mention} you dont have admin")
+        return
+    await ctx.channel.edit(slowmode_delay = duration)
+    message = discord.Embed(title="slow mode",description=f"{ctx.author.mention} has set slow mode for {duration}s in this channel")
+    await ctx.send(embed=message)
 bot.run(token)
