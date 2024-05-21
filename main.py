@@ -110,6 +110,8 @@ async def on_message(message):#semi-done
         if word in message.content:
             await user.add_roles(role,reason="saying bad word")
             await message.delete()
+            em=discord.Embed(title="Muted", description="You have been muted for saying a bad word. This behaviour is not encouraged")
+            await user.send(embed=em)
             channel = bot.bot_log_channel
             await channel.send(f"{user.mention} has been muted for saying {word}")
             return
@@ -254,4 +256,4 @@ async def swmode(ctx, duration: int):
     await ctx.channel.edit(slowmode_delay = duration)
     message = discord.Embed(title="slow mode",description=f"{ctx.author.mention} has set slow mode for {duration}s in this channel")
     await ctx.send(embed=message)
-bot.run(token)
+bot.run(token)bot.run(token)
