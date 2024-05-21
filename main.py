@@ -1,6 +1,7 @@
 import discord, os, asyncio, json
 from discord.ext import commands
 from dotenv import load_dotenv
+from BUDDY import guild_id, shop_id
 load_dotenv()
 def conver_duration(duration: str):
     multiplier = 60 if duration.endswith("m") else 3600
@@ -64,7 +65,7 @@ class Menu(discord.ui.View):
 @bot.event
 async def on_ready():
     print("login succful")
-    guild = bot.get_guild(803369227167072327)
+    guild = bot.get_guild(guild_id)
     channel_com_name = "bot-log"
     for channel in guild.channels:
         if channel.name == channel_com_name:
@@ -77,12 +78,10 @@ async def on_ready():
             }
         bot.bot_log_channel = await guild.create_text_channel(channel_com_name, overwrites=overwrites)
     print(f"Bot log channel ID: {bot.bot_log_channel.id}")
-    channelID = bot.get_channel(1241309467396542468)
-    await channelID.send("test")
+    channelID = bot.get_channel(shop_id)
     view = Menu()
     role = discord.utils.get(guild.roles, name="admin")
     everyone = discord.utils.get(guild.roles, name="member")
-    await channelID.send(view=view)
     for channel in guild.channels:
         if channel.name == channel_com_name:
             print("bot-log channel already exists")
@@ -92,6 +91,7 @@ async def on_ready():
     await channel_command.set_permissions(everyone,read_messages=False,send_messages=False)
     channel_ID = channel_command.id
     bot.bot_log_channel = bot.get_channel(channel_ID)
+    
 @bot.event
 async def on_member_join(member):#done
     guild = member.guild
@@ -167,7 +167,7 @@ async def banID(ctx, id: int,*, reason=None):#done
     if role is not None and role.name == "admin":
         if user == ctx.message.author:
             await ctx.send(f"{ctx.author.mention} you are cant ban yourself")
-        channel = bot.get_channel(1241131391501074615)
+        channel = bot.bot_log_channel
         await channel.send(f"{user.mention} has been banned for {reason}")
         await ctx.guild.ban(user)
     else:
@@ -191,7 +191,6 @@ async def ban(ctx, mem:discord.Member,*, reason=None):#done
             reason = "No reason provided"
         message = f"You have been banned from {ctx.guild.name} for {reason}"
         channel = bot.bot_log_channel
-        await ctx.send(f"{mem.mention} has been banned for {reason}")
         await mem.send(message)
         await ctx.guild.ban(mem, reason=reason)
         await channel.send(f"{mem} has been banned for {reason}")
@@ -221,7 +220,7 @@ async def warn(ctx,member:discord.Member,*,reason):
     save_warn(ctx,member=member,reason=reason)
     role = discord.utils.get(ctx.author.roles, name="admin")
     user = ctx.author
-    if user.roles is not role:
+    if role not in user.roles:
         await ctx.send(f"{user.mention} you dont have admin")
         return
     dm = await bot.fetch_user(member.id)
@@ -240,9 +239,13 @@ async def rmwarn(ctx, member: discord.Member, amount: int):
       remove_warn(ctx, member, amount)
       role = discord.utils.get(ctx.author.roles, name="admin")
       user = ctx.author
-      if user.roles is not role:
+      if role not in user.roles:
           await ctx.send(f"{user.mention} you dont have admin")
           return
       mess = discord.Embed(title="remove warn",description=f"{ctx.author.mention}\nhas removed {amount} of warns for {member.name}")
       await bot.bot_log_channel.send(embed=mess)
+@bot.command(name="welcome")
+async def welcome(ctx,member:discord.Member):
+    em=discord.Embed(title="Welcome", description="Hello and welcome to our server:)")
+    await member.send(embed=em)
 bot.run(token)
