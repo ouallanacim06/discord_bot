@@ -1,8 +1,6 @@
 import discord, os, asyncio, json
 from discord.ext import commands
-from dotenv import load_dotenv
-from BUDDY import guild_id, shop_id
-load_dotenv()
+from BUDDY import guild_id, shop_id, token
 def conver_duration(duration: str):
     multiplier = 60 if duration.endswith("m") else 3600
     return int(duration[:-1]) * multiplier
